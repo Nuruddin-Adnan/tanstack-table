@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     createColumnHelper,
     flexRender,
@@ -6,7 +6,6 @@ import {
     getFilteredRowModel,
     getSortedRowModel,
     getPaginationRowModel,
-    getExpandedRowModel,
     useReactTable,
 } from '@tanstack/react-table'
 
@@ -42,31 +41,9 @@ const Table = () => {
     const columnHelper = createColumnHelper(data);
 
     const columns = [
-        {
-            id: "expander",
-            header: () => null,
-            cell: ({ row }) => {
-                return row.getCanExpand() ? (
-                    <button className='btn btn-sm'
-                        {...{
-                            onClick: row.getToggleExpandedHandler(),
-                            style: { cursor: "pointer" }
-                        }}
-                    >
-                        {row.getIsExpanded() ? "👇" : "👉"}
-                    </button>
-                ) : (
-                    "🔵"
-                );
-            },
-            size: 40
-        },
-        {
-            accessorKey: "track_id",
-            header: "Track ID",
-            cell: info => <i>{info.getValue()}</i>,
-            footer: (props) => props.column.id
-        },
+        columnHelper.accessor('_id', {
+            header: () => 'ID',
+        }),
         columnHelper.accessor('patientName', {
             header: () => 'Patient Name',
             cell: info => <i>{info.getValue()}</i>,
@@ -131,75 +108,11 @@ const Table = () => {
         globalFilterFn: fuzzyFilter,
         getFilteredRowModel: getFilteredRowModel(),
         onSortingChange: setSorting,
-        getRowCanExpand: () => true,
-        getExpandedRowModel: getExpandedRowModel(),
+        getSubRows: row => row.subRows,
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
     })
-
-    const renderSubComponent = row => {
-        console.log(row.row.original);
-        return (
-
-            <>
-                <div className='card'>
-                    <div className="card-body">
-                        <h5 className="text-center">Investigation Details</h5>
-                        <table className='table table-sm table-bordered'>
-                            <thead>
-                                <th>Service Title</th>
-                                <th>Price</th>
-                                <th>Discount</th>
-                                <th>Discount Price</th>
-                                <th>Delivery Room</th>
-                            </thead>
-                            {
-                                (row.row.original.investigations).map((investigations, index) => <tr key={index}>
-                                    <td>{investigations?.serviceTitle}</td>
-                                    <td>{investigations?.price}</td>
-                                    <td>{investigations?.discount}</td>
-                                    <td>{investigations?.discountPrice}</td>
-                                    <td>{investigations?.deliveryRoom}</td>
-                                </tr>)
-                            }
-
-                        </table>
-                    </div>
-                </div>
-                <div className="card mt-4">
-                    <div className="card-body">
-                        <h5 className="text-center">Bill Collection History</h5>
-                        <table className='table table-sm table-bordered'>
-                            <thead>
-                                <th>Bill Track ID</th>
-                                <th>Bill</th>
-                                <th>Discount</th>
-                                <th>Net Bill</th>
-                                <th>Payment</th>
-                                <th>Payment Method </th>
-                                <th>Created At</th>
-                                <th>Created By</th>
-                            </thead>
-                            {
-                                (row.row.original.investigationBillsHistory).map((billsHistory, index) => <tr key={index}>
-                                    <td>{billsHistory?.billTrackId}</td>
-                                    <td>{billsHistory?.bill}</td>
-                                    <td>{billsHistory?.discount}</td>
-                                    <td>{billsHistory?.netBill}</td>
-                                    <td>{billsHistory?.payment}</td>
-                                    <td>{billsHistory?.paymentMethod}</td>
-                                    <td>{billsHistory?.createdAt}</td>
-                                    <td>{billsHistory?.createdBy}</td>
-                                </tr>)
-                            }
-
-                        </table>
-                    </div>
-                </div>
-            </>
-        );
-    };
 
 
     return (
@@ -230,7 +143,7 @@ const Table = () => {
                 />
             </div>
 
-            <div>
+            <div style={{ maxHeight: '60vh', overflow: 'auto' }}>
                 <table className='table table-striped table-bordered table-sm'
                     {...{
                         style: {
@@ -279,36 +192,13 @@ const Table = () => {
                     </thead>
                     <tbody>
                         {table.getRowModel().rows.map(row => (
-                            // Only for sigle row
-                            // <tr key={row.id}>
-                            //     {row.getVisibleCells().map(cell => (
-                            //         <td key={cell.id}>
-                            //             {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                            //         </td>
-                            //     ))}
-                            // </tr>
-
-                            <Fragment key={row.id}>
-                                <tr>
-                                    {row.getVisibleCells().map(cell => (
-                                        <td key={cell.id}>
-                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                        </td>
-                                    ))}
-                                </tr>
-
-                                {row.getIsExpanded() && (
-                                    <tr>
-                                        {/* 2nd row is a custom 1 cell row */}
-                                        <td colSpan={row.getVisibleCells().length}>
-                                            {renderSubComponent({ row })}
-                                            <p>This is my custom p tag</p>
-                                        </td>
-                                    </tr>
-                                )}
-                            </Fragment>
-
-
+                            <tr key={row.id}>
+                                {row.getVisibleCells().map(cell => (
+                                    <td key={cell.id}>
+                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                    </td>
+                                ))}
+                            </tr>
                         ))}
                     </tbody>
                     <tfoot>
@@ -329,6 +219,7 @@ const Table = () => {
                     </tfoot>
                 </table>
             </div>
+
             <div className="hstack gap-3 justify-content-end">
                 <button
                     className="border rounded p-1"
